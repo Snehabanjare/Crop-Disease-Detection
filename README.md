@@ -1,7 +1,9 @@
+
 # Crop Disease Detection from Leaf Images
 
+Upload a photo of a crop leaf and get the predicted crop and disease class (or "healthy"), with a confidence score and the top three predictions. The project compares a custom CNN baseline against a fine-tuned MobileNetV2 transfer-learning model on the PlantVillage dataset.
 
-**[Live Demo](https://crop-disease-detection-oki9bpycmdhegbgyqs4ruf.streamlit.app/)** 
+**[Live Demo](https://crop-disease-detection-oki9bpycmdhegbgyqs4ruf.streamlit.app/)** (the free host may need a few seconds to wake up)
 
 ## Highlights
 
