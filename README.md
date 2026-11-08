@@ -1,65 +1,71 @@
-# Crop Disease Detection from Leaf Images
+Crop Disease Detection from Leaf Images
 
-Classify a crop leaf image into a PlantVillage crop/disease class (or healthy)
-using a custom CNN or a fine-tuned MobileNetV2 model. The Streamlit app shows
-the predicted class, confidence, and top-three predictions.
+Upload a photo of a crop leaf and get the predicted crop and disease class (or "healthy"), with a confidence score and the top three predictions. The project compares a custom CNN baseline against a fine-tuned MobileNetV2 transfer-learning model on the PlantVillage dataset.
+
+**[Live Demo](https://crop-disease-detection-oki9bpycmdhegbgyqs4ruf.streamlit.app/)** (the free host may need a few seconds to wake up)
+
+## Highlights
+
+- **Two models compared:** a custom CNN baseline and a MobileNetV2 transfer-learning model with optional fine-tuning.
+- **89.18% test accuracy** with MobileNetV2 in a short run on a 4,370-image, 38-class sample (see [Results](#results)).
+- **Reproducible splits:** a fixed-seed, stratified 70/15/15 train/validation/test split.
+- **Full evaluation:** per-class precision, recall, and F1, confusion-matrix heatmaps, and a baseline-versus-transfer accuracy table.
+- **Explainable predictions:** optional Grad-CAM heatmap, and predictions below 60% confidence are flagged as uncertain.
+- **Deployed Streamlit app** and a command-line predictor.
+
+## Tech stack
+
+Python, TensorFlow, Keras, MobileNetV2, NumPy, Streamlit
 
 ## Project structure
 
-```text
+```
 .
 ├── app/
-│   └── app.py
+│   └── app.py              # Streamlit app
 ├── src/
-│   ├── augment.py
-│   ├── evaluate.py
-│   ├── model.py
-│   ├── predict.py
-│   ├── preprocess.py
-│   └── train.py
+│   ├── preprocess.py       # Loading, resizing, stratified split
+│   ├── augment.py          # Data augmentation
+│   ├── model.py            # Custom CNN and MobileNetV2 models
+│   ├── train.py            # Training CLI
+│   ├── evaluate.py         # Metrics, confusion matrices, comparison table
+│   └── predict.py          # CLI inference and Grad-CAM
 ├── tests/
-│   └── test_project.py
-├── artifacts/                 # Created by training/evaluation
-├── LICENSE
+│   └── test_project.py     # Preprocessing, split, and Grad-CAM checks
+├── artifacts/              # Created by training and evaluation
 ├── requirements.txt
-├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
-The layout keeps model training, preprocessing, augmentation, evaluation,
-inference, and the UI in separate modules. For additional structure examples,
-see the [apple-leaf-classifier](https://github.com/boluwatife-py/apple-leaf-classifier)
-repository's `models/` and `utils/` directories and
-[plant-disease-detection](https://github.com/cadu-ers/plant-disease-detection)'s
-modular `src/` layout. The [PlantVillage dataset repository](https://github.com/spMohanty/PlantVillage-Dataset)
-separates its color, grayscale, and segmented image sets; this project expects
-one selected image set arranged in class folders.
+Training, preprocessing, augmentation, evaluation, inference, and the UI are kept in separate modules.
 
-## Requirements
+## Getting started
 
-- Python 3.10–3.13 (the installed TensorFlow build was tested with Python 3.13)
+### Requirements
+
+- Python 3.10 to 3.13
 - A TensorFlow-supported CPU or GPU environment
-- At least **4,000 supported image files total** in the selected dataset
+- At least 4,000 supported image files (JPG, JPEG, PNG, BMP) in the selected dataset
 
-On native Windows, TensorFlow 2.11 and newer runs on CPU; use WSL2 for
-TensorFlow's supported CUDA GPU setup.
+On native Windows, TensorFlow 2.11 and newer runs on CPU only. Use WSL2 for GPU training.
 
-Install dependencies from the project root:
+### Install
 
-```powershell
+```
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## Dataset layout
+On macOS or Linux, activate with `source .venv/bin/activate` instead.
 
-Pass the directory whose immediate subdirectories are class names. Each class
-folder may contain images in nested directories. Supported formats are JPG,
-JPEG, PNG, and BMP.
+### Dataset layout
 
-```text
+Download the [PlantVillage dataset](https://github.com/spMohanty/PlantVillage-Dataset) and choose **one** image set (for example `raw/color`). Do not mix color, grayscale, and segmented versions. Pass the directory whose immediate subfolders are class names:
+
+```
 dataset/
 ├── Apple___Apple_scab/
 │   ├── image_001.JPG
@@ -69,111 +75,89 @@ dataset/
 └── ...
 ```
 
-For archives laid out as `dataset/train/<class>/...`, pass the `dataset`
-directory; training detects and reads its `train` subdirectory.
+Class folders may contain nested directories. If your archive is laid out as `dataset/train/<class>/...`, pass the `dataset` directory and training will read its `train` subfolder.
 
-For the original PlantVillage repository, choose one image set (for example
-`raw/color`) rather than mixing color, grayscale, and segmented versions.
-The loader checks the **4,000-image minimum** before training and uses a fixed
-seed to create a stratified 70/15/15 train/validation/test split. Training
-persists the sorted label mapping to `artifacts/class_names.json`. Keep the
-dataset unchanged and use the same seed when evaluating so the test split and
-class order match training.
+The loader checks the 4,000-image minimum, then creates a fixed-seed stratified 70/15/15 split. Training saves the sorted label mapping to `artifacts/class_names.json`. Keep the dataset unchanged and reuse the same seed when evaluating so the test split and class order match training.
 
-## Train
+## Usage
 
-Run commands from the project root. For the recommended pretrained model with
-fine-tuning:
+Run all commands from the project root.
 
-```powershell
+### Train
+
+Recommended: MobileNetV2 with fine-tuning.
+
+```
 python -m src.train --dataset-dir "path\to\dataset" --model transfer
 ```
 
-To train the custom CNN baseline for comparison:
+Custom CNN baseline for comparison:
 
-```powershell
+```
 python -m src.train --dataset-dir "path\to\dataset" --model baseline
 ```
 
-Fine-tuning is enabled by default for the transfer model. To use only its
-frozen feature extractor, add `--no-fine-tune`. Epoch counts, batch size,
-learning rates, output directory, and random seed can be changed through the
-CLI options shown by:
+Fine-tuning is on by default for the transfer model; add `--no-fine-tune` to use only the frozen feature extractor. Epochs, batch size, learning rates, output directory, and seed are configurable (`python -m src.train --help`).
 
-```powershell
-python -m src.train --help
+Both models use Adam and categorical cross-entropy, with EarlyStopping, ModelCheckpoint, and ReduceLROnPlateau callbacks. Checkpoints, the final model, class names, and a training-curves plot are saved to `artifacts/`.
+
+### Evaluate
+
+After training both models into the same artifacts directory:
+
 ```
-
-Both training modes use Adam and categorical cross-entropy, with
-EarlyStopping, ModelCheckpoint, and ReduceLROnPlateau callbacks. Checkpoints,
-the final Keras model, class names, and a training-curves PNG are written to
-`artifacts/` by default.
-
-## Evaluate
-
-Train both models into the same artifacts directory, then run:
-
-```powershell
 python -m src.evaluate --dataset-dir "path\to\dataset"
 ```
 
-Evaluation reports test accuracy and per-class precision, recall, and F1;
-it saves a confusion-matrix heatmap for each model and a baseline-versus-
-transfer accuracy table under `artifacts/evaluation/`. Override the dataset,
-model, class-name, or output paths with `python -m src.evaluate --help`.
+This reports test accuracy and per-class precision, recall, and F1, and saves a confusion-matrix heatmap for each model plus a baseline-versus-transfer accuracy table under `artifacts/evaluation/`.
 
-## Predict from the command line
+### Predict from the command line
 
-```powershell
+```
 python -m src.predict --image "path\to\leaf.jpg" --model artifacts\transfer_model.keras
 ```
 
-Top-three predictions are shown by default. To save an optional Grad-CAM
-overlay for the top prediction:
+Top three predictions are shown by default. To also save a Grad-CAM overlay for the top prediction:
 
-```powershell
+```
 python -m src.predict --image "path\to\leaf.jpg" --model artifacts\transfer_model.keras --grad-cam-output artifacts\gradcam.jpg
 ```
 
-## Run the Streamlit app
+### Run the Streamlit app
 
-```powershell
+```
 python -m streamlit run app/app.py
 ```
 
-By default, the app looks for `artifacts/transfer_model.keras` and
-`artifacts/class_names.json`. Use the sidebar to select a different model and
-class-name file. Predictions below 60% confidence are flagged as uncertain.
-Enable **Show Grad-CAM explanation** before clicking Predict to see a heatmap
-overlay for the top class. Grad-CAM indicates image regions that influenced
-the model; it does not verify that a prediction is correct.
+The app loads `artifacts/transfer_model.keras` and `artifacts/class_names.json` by default; use the sidebar to pick a different model or class-name file. It shows the predicted class, confidence, and top three predictions, and flags anything below 60% confidence as uncertain. Tick **Show Grad-CAM explanation** before clicking Predict to see which image regions influenced the top class.
 
-## Smoke-test result
+## Results
 
-The supplied 4,370-image, 38-class sample was used for a short MobileNetV2
-run (3 frozen-backbone epochs plus 2 fine-tuning epochs). It reached **89.18%
-accuracy** on the held-out 656-image test split. This is a smoke-test result,
-not a performance guarantee; longer training and evaluation on a larger,
-representative dataset are recommended. The corresponding model and class
-mapping are saved as `artifacts/transfer_model.keras` and
-`artifacts/class_names.json`.
+| Setup | Value |
+|---|---|
+| Dataset sample | 4,370 images, 38 classes |
+| Model | MobileNetV2 (3 frozen-backbone epochs + 2 fine-tuning epochs) |
+| Held-out test set | 656 images |
+| Test accuracy | **89.18%** |
+
+This is a short smoke-test run, not a performance guarantee. Longer training and evaluation on the full, representative PlantVillage dataset are recommended. Grad-CAM shows where the model looked; it does not confirm a prediction is correct.
 
 ## Tests
 
-Run the lightweight preprocessing, split, and Grad-CAM checks from the project
-root:
-
-```powershell
+```
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-## Publishing to GitHub
+The tests cover preprocessing, the stratified split, and Grad-CAM.
 
-The `.gitignore` excludes the local virtual environment, dataset, and generated
-model artifacts except for `artifacts/transfer_model.keras` and
-`artifacts/class_names.json`, which the hosted app needs to make predictions.
-Do not commit uploaded dataset archives or extracted images. Before
-redistributing any dataset or third-party model weights, check their applicable
-terms. This repository includes an MIT license for its project code; it does
-not change the terms for PlantVillage data, TensorFlow, or ImageNet-pretrained
-weights.
+## Notes on publishing
+
+The `.gitignore` excludes the local virtual environment, dataset, and generated artifacts, except `artifacts/transfer_model.keras` and `artifacts/class_names.json`, which the hosted app needs for predictions. Do not commit dataset archives or extracted images.
+
+## License
+
+The project code is released under the MIT License (see `LICENSE`). This does not change the terms of the PlantVillage dataset, TensorFlow, or ImageNet-pretrained weights; check those terms before redistributing them.
+
+## Author
+
+**Sneha Banjare** · [GitHub](https://github.com/Snehabanjare) · [LinkedIn](https://www.linkedin.com/in/sneha-banjare-6494b8327)
