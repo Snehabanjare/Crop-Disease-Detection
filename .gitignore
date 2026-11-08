@@ -22,7 +22,9 @@ htmlcov/
 
 # Dataset and generated model artifacts can be large or separately licensed.
 /data/
-/artifacts/
+/artifacts/**
+!/artifacts/transfer_model.keras
+!/artifacts/class_names.json
 
 # OS files
 .DS_Store

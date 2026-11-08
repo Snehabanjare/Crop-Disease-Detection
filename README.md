@@ -170,9 +170,10 @@ root:
 ## Publishing to GitHub
 
 The `.gitignore` excludes the local virtual environment, dataset, and generated
-model artifacts. Do not commit uploaded dataset archives, extracted images, or
-trained model files; share setup instructions and train the model locally
-instead. Before redistributing any dataset or third-party model weights, check
-their applicable terms. This repository includes an MIT license for its project
-code; it does not change the terms for PlantVillage data, TensorFlow, or
-ImageNet-pretrained weights.
+model artifacts except for `artifacts/transfer_model.keras` and
+`artifacts/class_names.json`, which the hosted app needs to make predictions.
+Do not commit uploaded dataset archives or extracted images. Before
+redistributing any dataset or third-party model weights, check their applicable
+terms. This repository includes an MIT license for its project code; it does
+not change the terms for PlantVillage data, TensorFlow, or ImageNet-pretrained
+weights.
